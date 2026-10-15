@@ -1,0 +1,617 @@
+{
+  "_note": "Demo dataset for the Shopping Assistant MCP example. Prices and store names are fictional sample values.",
+  "products": [
+    {
+      "id": "L001",
+      "name": "Lenovo IdeaPad Slim 3",
+      "category": "laptop",
+      "brand": "Lenovo",
+      "price": 48999,
+      "currency": "INR",
+      "rating": 4.3,
+      "description": "Thin and light everyday laptop with Ryzen 7.",
+      "specifications": {
+        "processor": "AMD Ryzen 7 7730U",
+        "ram": "16GB",
+        "storage": "512GB SSD",
+        "display": "15.6 inch FHD",
+        "graphics": "AMD Radeon Integrated",
+        "battery": "47Wh",
+        "weight": "1.62 kg",
+        "os": "Windows 11 Home"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 48999,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 47999,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 49499,
+          "in_stock": false
+        }
+      ]
+    },
+    {
+      "id": "L002",
+      "name": "HP 15s Ryzen 5",
+      "category": "laptop",
+      "brand": "HP",
+      "price": 45999,
+      "currency": "INR",
+      "rating": 4.1,
+      "description": "Value laptop with large 1TB SSD.",
+      "specifications": {
+        "processor": "AMD Ryzen 5 7520U",
+        "ram": "16GB",
+        "storage": "1TB SSD",
+        "display": "15.6 inch FHD",
+        "graphics": "AMD Radeon 610M",
+        "battery": "41Wh",
+        "weight": "1.69 kg",
+        "os": "Windows 11 Home"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 45999,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 46499,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 44999,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "L003",
+      "name": "Acer Aspire Lite",
+      "category": "laptop",
+      "brand": "Acer",
+      "price": 38999,
+      "currency": "INR",
+      "rating": 4.0,
+      "description": "Budget laptop for students and office work.",
+      "specifications": {
+        "processor": "Intel Core i5-1235U",
+        "ram": "8GB",
+        "storage": "512GB SSD",
+        "display": "15.6 inch FHD",
+        "graphics": "Intel Iris Xe",
+        "battery": "40Wh",
+        "weight": "1.59 kg",
+        "os": "Windows 11 Home"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 38999,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 37999,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "L004",
+      "name": "ASUS Vivobook 16X",
+      "category": "laptop",
+      "brand": "ASUS",
+      "price": 72999,
+      "currency": "INR",
+      "rating": 4.4,
+      "description": "Creator laptop with dedicated RTX graphics.",
+      "specifications": {
+        "processor": "Intel Core i7-12650H",
+        "ram": "16GB",
+        "storage": "1TB SSD",
+        "display": "16 inch WUXGA 120Hz",
+        "graphics": "NVIDIA GeForce RTX 3050 4GB",
+        "battery": "50Wh",
+        "weight": "1.80 kg",
+        "os": "Windows 11 Home"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 72999,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 71499,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 73999,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "L005",
+      "name": "Dell Inspiron 14 Plus",
+      "category": "laptop",
+      "brand": "Dell",
+      "price": 89999,
+      "currency": "INR",
+      "rating": 4.5,
+      "description": "Premium 14-inch laptop with 32GB RAM.",
+      "specifications": {
+        "processor": "Intel Core Ultra 7 155H",
+        "ram": "32GB",
+        "storage": "1TB SSD",
+        "display": "14 inch 2.2K",
+        "graphics": "Intel Arc Integrated",
+        "battery": "64Wh",
+        "weight": "1.60 kg",
+        "os": "Windows 11 Home"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 89999,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 87999,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "S001",
+      "name": "Samsung Galaxy M35 5G",
+      "category": "smartphone",
+      "brand": "Samsung",
+      "price": 24999,
+      "currency": "INR",
+      "rating": 4.2,
+      "description": "Mid-range 5G phone with a huge battery.",
+      "specifications": {
+        "processor": "Exynos 1380",
+        "ram": "8GB",
+        "storage": "128GB",
+        "display": "6.6 inch Super AMOLED 120Hz",
+        "camera": "50MP + 8MP + 2MP",
+        "battery": "6000mAh",
+        "os": "Android 14"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 24999,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 23999,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 24499,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "S002",
+      "name": "Redmi Note 13 5G",
+      "category": "smartphone",
+      "brand": "Xiaomi",
+      "price": 18999,
+      "currency": "INR",
+      "rating": 4.1,
+      "description": "Affordable 5G phone with 108MP camera.",
+      "specifications": {
+        "processor": "MediaTek Dimensity 6080",
+        "ram": "8GB",
+        "storage": "256GB",
+        "display": "6.67 inch AMOLED 120Hz",
+        "camera": "108MP + 8MP + 2MP",
+        "battery": "5000mAh",
+        "os": "Android 14"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 18999,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 18499,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "S003",
+      "name": "OnePlus Nord 4",
+      "category": "smartphone",
+      "brand": "OnePlus",
+      "price": 29999,
+      "currency": "INR",
+      "rating": 4.4,
+      "description": "Fast performance phone with metal unibody.",
+      "specifications": {
+        "processor": "Snapdragon 7+ Gen 3",
+        "ram": "12GB",
+        "storage": "256GB",
+        "display": "6.74 inch AMOLED 120Hz",
+        "camera": "50MP + 8MP",
+        "battery": "5500mAh",
+        "os": "Android 14"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 29999,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 30999,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 29499,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "S004",
+      "name": "Google Pixel 8a",
+      "category": "smartphone",
+      "brand": "Google",
+      "price": 52999,
+      "currency": "INR",
+      "rating": 4.5,
+      "description": "Compact phone with excellent camera software.",
+      "specifications": {
+        "processor": "Google Tensor G3",
+        "ram": "8GB",
+        "storage": "128GB",
+        "display": "6.1 inch OLED 120Hz",
+        "camera": "64MP + 13MP",
+        "battery": "4492mAh",
+        "os": "Android 14"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 52999,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 49999,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "S005",
+      "name": "Apple iPhone 15",
+      "category": "smartphone",
+      "brand": "Apple",
+      "price": 69999,
+      "currency": "INR",
+      "rating": 4.6,
+      "description": "Apple flagship with USB-C and Dynamic Island.",
+      "specifications": {
+        "processor": "A16 Bionic",
+        "ram": "6GB",
+        "storage": "128GB",
+        "display": "6.1 inch Super Retina XDR",
+        "camera": "48MP + 12MP",
+        "battery": "3349mAh",
+        "os": "iOS 17"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 69999,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 68999,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 70999,
+          "in_stock": false
+        }
+      ]
+    },
+    {
+      "id": "M001",
+      "name": "LG 24MP400 24-inch Monitor",
+      "category": "monitor",
+      "brand": "LG",
+      "price": 8999,
+      "currency": "INR",
+      "rating": 4.3,
+      "description": "Everyday IPS monitor with slim bezels.",
+      "specifications": {
+        "display": "23.8 inch IPS FHD",
+        "refresh_rate": "75Hz",
+        "ports": "HDMI, VGA",
+        "response_time": "5ms"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 8999,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 8499,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "M002",
+      "name": "Samsung Odyssey G5 27-inch",
+      "category": "monitor",
+      "brand": "Samsung",
+      "price": 21999,
+      "currency": "INR",
+      "rating": 4.4,
+      "description": "Curved QHD gaming monitor.",
+      "specifications": {
+        "display": "27 inch VA QHD curved",
+        "refresh_rate": "165Hz",
+        "ports": "HDMI, DisplayPort",
+        "response_time": "1ms"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 21999,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 22999,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 20999,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "M003",
+      "name": "Dell S2722QC 27-inch 4K",
+      "category": "monitor",
+      "brand": "Dell",
+      "price": 28999,
+      "currency": "INR",
+      "rating": 4.5,
+      "description": "4K USB-C monitor for productivity.",
+      "specifications": {
+        "display": "27 inch IPS 4K UHD",
+        "refresh_rate": "60Hz",
+        "ports": "HDMI x2, USB-C 65W",
+        "response_time": "4ms"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 28999,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 27999,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "K001",
+      "name": "Logitech MX Keys S",
+      "category": "keyboard",
+      "brand": "Logitech",
+      "price": 11995,
+      "currency": "INR",
+      "rating": 4.6,
+      "description": "Premium wireless productivity keyboard.",
+      "specifications": {
+        "type": "Wireless low-profile",
+        "connectivity": "Bluetooth, Logi Bolt",
+        "backlight": "Smart backlighting",
+        "battery": "Rechargeable, up to 10 days (backlight on)"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 11995,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 10999,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "K002",
+      "name": "Redragon K552 Kumara",
+      "category": "keyboard",
+      "brand": "Redragon",
+      "price": 2799,
+      "currency": "INR",
+      "rating": 4.3,
+      "description": "Budget mechanical gaming keyboard.",
+      "specifications": {
+        "type": "Mechanical TKL",
+        "switches": "Outemu Red",
+        "connectivity": "USB wired",
+        "backlight": "RGB"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 2799,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 2599,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 2899,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "MS001",
+      "name": "Logitech MX Master 3S",
+      "category": "mouse",
+      "brand": "Logitech",
+      "price": 9495,
+      "currency": "INR",
+      "rating": 4.7,
+      "description": "Ergonomic productivity mouse with quiet clicks.",
+      "specifications": {
+        "type": "Wireless ergonomic",
+        "dpi": "8000",
+        "connectivity": "Bluetooth, Logi Bolt",
+        "battery": "Rechargeable, up to 70 days"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 9495,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 8999,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "MS002",
+      "name": "Razer DeathAdder Essential",
+      "category": "mouse",
+      "brand": "Razer",
+      "price": 1499,
+      "currency": "INR",
+      "rating": 4.4,
+      "description": "Popular ergonomic wired gaming mouse.",
+      "specifications": {
+        "type": "Wired gaming",
+        "dpi": "6400",
+        "connectivity": "USB wired",
+        "buttons": "5 programmable"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 1499,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 1299,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "H001",
+      "name": "Sony WH-1000XM5",
+      "category": "headphones",
+      "brand": "Sony",
+      "price": 29990,
+      "currency": "INR",
+      "rating": 4.6,
+      "description": "Industry-leading noise cancelling headphones.",
+      "specifications": {
+        "type": "Over-ear wireless",
+        "noise_cancellation": "Adaptive ANC",
+        "battery": "Up to 30 hours",
+        "connectivity": "Bluetooth 5.2, 3.5mm"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 29990,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 27990,
+          "in_stock": true
+        },
+        {
+          "store": "ElectroWorld",
+          "price": 28990,
+          "in_stock": true
+        }
+      ]
+    },
+    {
+      "id": "H002",
+      "name": "boAt Rockerz 550",
+      "category": "headphones",
+      "brand": "boAt",
+      "price": 1799,
+      "currency": "INR",
+      "rating": 4.0,
+      "description": "Affordable wireless headphones with big drivers.",
+      "specifications": {
+        "type": "Over-ear wireless",
+        "noise_cancellation": "Passive",
+        "battery": "Up to 20 hours",
+        "connectivity": "Bluetooth 5.0"
+      },
+      "stores": [
+        {
+          "store": "TechMart",
+          "price": 1799,
+          "in_stock": true
+        },
+        {
+          "store": "GadgetHub",
+          "price": 1699,
+          "in_stock": true
+        }
+      ]
+    }
+  ]
+}

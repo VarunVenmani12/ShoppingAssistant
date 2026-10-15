@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Shopping Assistant</title>
+<style>
+/* Layout: top status bar; chat column on the left, live MCP trace panel on the right; stacks on narrow screens.
+   Fully offline: system fonts only, no external resources. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --surface-2: #eef1f4;
+  --fg: #18212b;
+  --muted: #5d6874;
+  --line: #dce1e6;
+  --accent: #0f7a5c;      /* MCP / primary actions */
+  --accent-fg: #ffffff;
+  --llm: #6b4fbf;         /* qwen3 / Ollama */
+  --server: #b26a12;      /* MCP server + products.json */
+  --user: #2f5d9e;
+  --danger: #b4302a;
+  --user-bubble: #e3ecf8;
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "Cascadia Mono", Consolas, "Courier New", monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161a; --surface: #1a2026; --surface-2: #222a31; --fg: #e3e8ed; --muted: #98a3ae;
+    --line: #2d363e; --accent: #34c08f; --accent-fg: #0c1f17; --llm: #a891f0; --server: #e3a04a;
+    --user: #8ab4f0; --danger: #ef7a72; --user-bubble: #23324a; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.55; }
+button, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+
+/* Top bar */
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand h1 { font-family: var(--font-display); font-size: 19px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+.brand span { color: var(--muted); font-size: 13px; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); white-space: nowrap; }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.pill.ok .dot { background: var(--accent); }
+.pill.bad .dot { background: var(--danger); }
+.pill code { font-family: var(--font-mono); font-size: 12px; }
+
+/* Main split */
+.main { min-height: 0; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr); }
+.chat { min-height: 0; display: grid; grid-template-rows: 1fr auto; border-right: 1px solid var(--line); }
+.messages { overflow-y: auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 18px; }
+.composer { padding: 12px 20px 16px; background: var(--surface); border-top: 1px solid var(--line); display: grid; gap: 8px; }
+.composer-row { display: flex; gap: 10px; align-items: flex-end; }
+.composer textarea { flex: 1; min-width: 0; resize: none; max-height: 160px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); line-height: 1.45; }
+.btn { border: 1px solid transparent; border-radius: var(--radius); padding: 9px 16px; cursor: pointer; font-weight: 600; }
+.btn-primary { background: var(--accent); color: var(--accent-fg); }
+.btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+.btn-ghost { background: transparent; border-color: var(--line); color: var(--muted); font-weight: 500; padding: 6px 12px; font-size: 13px; }
+.btn-ghost:hover { color: var(--fg); }
+.hint { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* Messages */
+.msg { display: grid; gap: 6px; max-width: 760px; }
+.msg.user { align-self: flex-end; justify-items: end; }
+.who { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+.bubble { padding: 12px 15px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
+.msg.user .bubble { background: var(--user-bubble); border-color: transparent; border-bottom-right-radius: 4px; }
+.msg.assistant .bubble { border-bottom-left-radius: 4px; }
+.msg.error .bubble { border-color: var(--danger); color: var(--danger); }
+.bubble p { margin: 0 0 8px; } .bubble p:last-child { margin-bottom: 0; }
+.bubble ol, .bubble ul { margin: 4px 0 10px; padding-left: 22px; display: grid; gap: 8px; }
+.bubble li::marker { color: var(--muted); font-variant-numeric: tabular-nums; }
+.bubble h4 { margin: 6px 0; font-size: 15px; }
+.bubble hr { border: 0; border-top: 1px solid var(--line); margin: 10px 0; }
+.bubble code { font-family: var(--font-mono); font-size: 13px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.bubble .price { font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bubble .table { overflow-x: auto; margin: 6px 0 10px; }
+.bubble table { border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.bubble th, .bubble td { border-bottom: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.bubble th { color: var(--muted); font-weight: 600; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted); align-items: center; }
+.tool-tag { font-family: var(--font-mono); font-size: 11.5px; padding: 2px 7px; border-radius: 6px; background: var(--surface-2); color: var(--accent); border: 1px solid var(--line); }
+.working { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
+.spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Empty state */
+.welcome { margin: auto 0; display: grid; gap: 14px; max-width: 620px; }
+.welcome h2 { font-family: var(--font-display); font-size: 24px; margin: 0; text-wrap: balance; }
+.welcome p { margin: 0; color: var(--muted); }
+.examples { display: flex; flex-wrap: wrap; gap: 8px; }
+.example { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; cursor: pointer; font-size: 13.5px; }
+.example:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Trace panel */
+.trace { min-height: 0; display: grid; grid-template-rows: auto 1fr; background: var(--surface); }
+.trace-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+.trace-head h2 { margin: 0; font-size: 15px; font-weight: 650; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.trace-body { overflow-y: auto; padding: 14px 18px 24px; display: grid; gap: 16px; align-content: start; }
+.trace-empty { color: var(--muted); font-size: 13.5px; display: grid; gap: 10px; }
+.flowline { font-family: var(--font-mono); font-size: 12px; line-height: 1.8; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre; }
+.turn { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.turn-title { padding: 8px 12px; background: var(--surface-2); font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 10px; }
+.turn-title span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.turn-title .time { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; flex: none; }
+.steps { list-style: none; margin: 0; padding: 8px 12px 10px; display: grid; gap: 8px; }
+.step { display: grid; grid-template-columns: 64px 1fr auto; gap: 8px; align-items: start; font-size: 13px; min-width: 0; }
+.tag { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; letter-spacing: .04em; padding: 2px 0; text-align: center; border-radius: 5px; color: var(--surface); }
+.tag.USER { background: var(--user); } .tag.LLM { background: var(--llm); }
+.tag.MCP { background: var(--accent); } .tag.SERVER { background: var(--server); }
+.tag.ANSWER { background: var(--fg); } .tag.ERROR { background: var(--danger); }
+.step .body { min-width: 0; overflow-wrap: anywhere; }
+.step .t { color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.args { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.arg { font-family: var(--font-mono); font-size: 11.5px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+.step.err .body { color: var(--danger); }
+details { margin-top: 4px; }
+summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+details pre { margin: 6px 0 0; max-height: 260px; overflow: auto; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5; background: var(--surface-2); border-radius: 6px; padding: 8px 10px; }
+
+@media (max-width: 860px) {
+  .app { height: auto; min-height: 100%; }
+  .main { grid-template-columns: 1fr; }
+  .chat { border-right: 0; border-bottom: 1px solid var(--line); min-height: 70vh; }
+  .messages { padding-inline: 16px; }
+  .composer { padding-inline: 16px; }
+  .topbar { padding-inline: 16px; }
+  .trace-body, .trace-head { padding-inline: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><h1>AI Shopping Assistant</h1><span>local · no cloud</span></div>
+    <div class="pills">
+      <span class="pill" id="pill-llm"><span class="dot"></span>Ollama <code id="model-name">…</code></span>
+      <span class="pill" id="pill-mcp"><span class="dot"></span>MCP <span id="mcp-detail">connecting…</span></span>
+    </div>
+    <button class="btn btn-ghost" id="new-chat" type="button">New chat</button>
+  </header>
+
+  <main class="main">
+    <section class="chat" aria-label="Chat">
+      <div class="messages" id="messages" aria-live="polite">
+        <div class="welcome" id="welcome">
+          <h2>What are you shopping for?</h2>
+          <p>Ask about laptops, smartphones, monitors, keyboards, mice or headphones. Prices are in ₹. Every answer comes from <code>products.json</code> through MCP tools; watch the trace panel to see each step.</p>
+          <div class="examples" id="examples"></div>
+        </div>
+      </div>
+      <form class="composer" id="composer">
+        <div class="composer-row">
+          <label for="input" class="sr-only" style="position:absolute;left:-9999px">Your question</label>
+          <textarea id="input" rows="1" maxlength="1000" placeholder="e.g. Find laptops under ₹50000 with 16GB RAM"></textarea>
+          <button class="btn btn-primary" id="send" type="submit">Send</button>
+        </div>
+        <div class="hint"><span>Enter to send · Shift+Enter for a new line</span><span id="status-text"></span></div>
+      </form>
+    </section>
+
+    <aside class="trace" aria-label="MCP trace">
+      <div class="trace-head">
+        <h2>MCP trace</h2>
+        <div class="legend">
+          <span><i style="background:var(--user)"></i>User</span>
+          <span><i style="background:var(--llm)"></i>Qwen3 (Ollama)</span>
+          <span><i style="background:var(--accent)"></i>MCP client</span>
+          <span><i style="background:var(--server)"></i>MCP server</span>
+        </div>
+      </div>
+      <div class="trace-body" id="trace">
+        <div class="trace-empty" id="trace-empty">
+          <span>Each question appears here as it runs:</span>
+          <div class="flowline">You → Qwen3 picks a tool
+    → MCP client  tools/call
+    → MCP server  reads products.json
+    → result back over MCP
+    → Qwen3 writes the answer → You</div>
+          <span id="tool-list"></span>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const messagesEl = $("messages"), traceEl = $("trace"), input = $("input"), sendBtn = $("send");
+  const newSessionId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random().toString(16).slice(2));
+  let sessionId = newSessionId();
+  let busy = false;
+  let statusTimer = null;
+
+  // ---------- helpers ----------
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const scrollDown = (box) => { box.scrollTop = box.scrollHeight; };
+
+  function inline(text) {
+    return text
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[\s(])\*([^*\s][^*]*)\*(?=[\s).,!?:;]|$)/g, "$1<em>$2</em>")
+      .replace(/(₹\s?\d[\d,]*(?:\.\d+)?)/g, '<span class="price">$1</span>');
+  }
+
+  // Small, safe Markdown renderer (input is HTML-escaped first).
+  function renderMarkdown(src) {
+    const lines = esc(src || "").split(/\r?\n/);
+    let html = "", list = null, li = null, prevBlank = false, table = null;
+    const flushLi = () => { if (li) { html += `<li${li.value ? ` value="${li.value}"` : ""}>${li.parts.join("<br>")}</li>`; li = null; } };
+    const closeList = () => { flushLi(); if (list) { html += `</${list}>`; list = null; } };
+    const flushTable = () => {
+      if (!table) return;
+      const rows = table.filter((r) => !/^\|?\s*:?-{2,}/.test(r));
+      const cells = (r) => r.replace(/^\||\|$/g, "").split("|").map((c) => inline(c.trim()));
+      html += '<div class="table"><table>' + rows.map((r, i) => "<tr>" + cells(r).map((c) => i === 0 ? `<th>${c}</th>` : `<td>${c}</td>`).join("") + "</tr>").join("") + "</table></div>";
+      table = null;
+    };
+    for (const raw of lines) {
+      const line = raw.replace(/\s+$/, "");
+      const t = line.trim();
+      if (t.startsWith("|")) { closeList(); (table = table || []).push(t); prevBlank = false; continue; }
+      flushTable();
+      if (!t) { prevBlank = true; continue; }
+      const indented = /^\s{2,}\S/.test(line);
+      let m;
+      if (!indented && (m = t.match(/^(\d+)[.)]\s+(.*)$/))) {
+        if (list !== "ol") { closeList(); html += "<ol>"; list = "ol"; }
+        flushLi(); li = { value: m[1], parts: [inline(m[2])] };
+      } else if ((m = t.match(/^[-*•]\s+(.*)$/))) {
+        if (list === "ol" && li) li.parts.push("· " + inline(m[1]));
+        else { if (list !== "ul") { closeList(); html += "<ul>"; list = "ul"; } flushLi(); li = { parts: [inline(m[1])] }; }
+      } else if (li && (indented || !prevBlank)) {
+        li.parts.push(inline(t));
+      } else if ((m = t.match(/^#{1,4}\s+(.*)$/))) {
+        closeList(); html += `<h4>${inline(m[1])}</h4>`;
+      } else if (/^(-{3,}|\*{3,})$/.test(t)) {
+        closeList(); html += "<hr>";
+      } else {
+        closeList(); html += `<p>${inline(t)}</p>`;
+      }
+      prevBlank = false;
+    }
+    flushTable(); closeList();
+    return html;
+  }
+
+  function summarizeResult(text) {
+    let data;
+    try { data = JSON.parse(text); } catch { return "non-JSON result"; }
+    if (data.error) return "error: " + data.error;
+    if (typeof data.count === "number") {
+      if (!data.count) return "0 products matched";
+      const names = (data.products || []).map((p) => `${p.id} ${p.name}`).slice(0, 4).join(", ");
+      return `${data.count} product(s): ${names}${data.count > 4 ? ", …" : ""}`;
+    }
+    if (Array.isArray(data.stores) && data.best_deal) {
+      return `${data.stores.length} stores · best ${data.best_deal.store} ${data.best_deal.price_formatted || data.best_deal.price}`;
+    }
+    if (data.specifications) return `${data.id} ${data.name} · ${Object.keys(data.specifications).length} specs`;
+    return "OK";
+  }
+
+  function prettyJson(text) {
+    try { return JSON.stringify(JSON.parse(text), null, 2); } catch { return text; }
+  }
+
+  // ---------- status ----------
+  async function loadStatus() {
+    try {
+      const res = await fetch("/api/status");
+      const s = await res.json();
+      $("model-name").textContent = s.model;
+      const llmPill = $("pill-llm"), mcpPill = $("pill-mcp");
+      llmPill.className = "pill " + (s.ollama.ok ? "ok" : "bad");
+      llmPill.title = s.ollama.ok ? `Connected to ${s.ollama_host}` : s.ollama.error;
+      mcpPill.className = "pill " + (s.mcp.ok ? "ok" : "bad");
+      $("mcp-detail").textContent = s.mcp.ok ? `${s.mcp.tools.length} tools` : "offline";
+      mcpPill.title = s.mcp.ok ? s.mcp.tools.map((t) => t.name).join(", ") : s.mcp.error;
+      $("tool-list").innerHTML = s.mcp.ok
+        ? "Tools discovered over MCP: " + s.mcp.tools.map((t) => `<span class="tool-tag" title="${esc(t.description)} (${esc(t.parameters.join(", "))})">${esc(t.name)}</span>`).join(" ")
+        : "";
+      const ex = $("examples");
+      if (!ex.childElementCount) {
+        for (const q of s.examples) {
+          const b = el("button", "example"); b.type = "button"; b.textContent = q;
+          b.addEventListener("click", () => ask(q));
+          ex.appendChild(b);
+        }
+      }
+      const problem = !s.ollama.ok ? s.ollama.error : !s.mcp.ok ? s.mcp.error : "";
+      $("status-text").textContent = problem ? "⚠ " + problem : "";
+      clearTimeout(statusTimer);
+      if (problem) statusTimer = setTimeout(loadStatus, 8000);
+    } catch {
+      $("status-text").textContent = "⚠ Cannot reach the local web server. Is web_app.py still running?";
+      clearTimeout(statusTimer);
+      statusTimer = setTimeout(loadStatus, 8000);
+    }
+  }
+
+  // ---------- chat ----------
+  function addMessage(role, html) {
+    $("welcome")?.remove();
+    const msg = el("div", "msg " + role);
+    msg.appendChild(el("div", "who", role === "user" ? "You" : role === "error" ? "Problem" : "Assistant"));
+    const bubble = el("div", "bubble", html);
+    msg.appendChild(bubble);
+    messagesEl.appendChild(msg);
+    scrollDown(messagesEl);
+    return msg;
+  }
+
+  function newTurn(question) {
+    $("trace-empty")?.remove();
+    const turn = el("div", "turn");
+    const title = el("div", "turn-title");
+    title.appendChild(el("span", null, esc(question)));
+    const time = el("span", "time", "running…");
+    title.appendChild(time);
+    turn.appendChild(title);
+    const steps = el("ol", "steps");
+    turn.appendChild(steps);
+    traceEl.appendChild(turn);
+    scrollDown(traceEl);
+    return {
+      time,
+      add(tag, html, t, extraCls) {
+        const s = el("li", "step" + (extraCls ? " " + extraCls : ""));
+        s.appendChild(el("span", "tag " + tag, tag));
+        s.appendChild(el("div", "body", html));
+        s.appendChild(el("span", "t", t != null ? t.toFixed(1) + "s" : ""));
+        steps.appendChild(s);
+        scrollDown(traceEl);
+      },
+    };
+  }
+
+  const argChips = (args) => {
+    const entries = Object.entries(args || {});
+    if (!entries.length) return "";
+    return '<div class="args">' + entries.map(([k, v]) => `<span class="arg">${esc(k)}=${esc(JSON.stringify(v))}</span>`).join("") + "</div>";
+  };
+
+  function setBusy(value) {
+    busy = value;
+    sendBtn.disabled = value;
+    sendBtn.textContent = value ? "Working…" : "Send";
+  }
+
+  async function ask(question) {
+    question = (question || "").trim();
+    if (!question || busy) return;
+    setBusy(true);
+    input.value = ""; autosize();
+    addMessage("user", esc(question).replace(/\n/g, "<br>"));
+    const pending = addMessage("assistant", '<div class="working"><span class="spinner"></span><span>Thinking…</span></div>');
+    const workingText = pending.querySelector(".working span:last-child");
+    const turn = newTurn(question);
+    const used = [];
+    let finished = false;
+
+    const handle = (ev) => {
+      switch (ev.type) {
+        case "user": turn.add("USER", esc(ev.text), ev.t); break;
+        case "info": workingText.textContent = ev.text; break;
+        case "llm": turn.add("LLM", esc(ev.text), ev.t); workingText.textContent = ev.text; break;
+        case "mcp_call":
+          turn.add("MCP", `tools/call <strong>${esc(ev.tool)}</strong>${argChips(ev.arguments)}`, ev.t);
+          workingText.textContent = `Calling ${ev.tool} through MCP…`;
+          break;
+        case "mcp_result":
+          used.push(ev.tool);
+          turn.add("SERVER",
+            `${esc(ev.tool)} → ${esc(summarizeResult(ev.result))}<details><summary>Raw MCP result</summary><pre>${esc(prettyJson(ev.result))}</pre></details>`,
+            ev.t, ev.is_error ? "err" : "");
+          break;
+        case "answer": {
+          finished = true;
+          turn.add("ANSWER", "Answer shown in chat", ev.t);
+          turn.time.textContent = ev.t.toFixed(1) + "s";
+          pending.querySelector(".bubble").innerHTML = renderMarkdown(ev.text);
+          const counts = {};
+          for (const name of ev.tools_used) counts[name] = (counts[name] || 0) + 1;
+          const tags = Object.entries(counts).map(([n, c]) => `<span class="tool-tag">${esc(n)}${c > 1 ? " ×" + c : ""}</span>`).join("");
+          pending.appendChild(el("div", "meta", (tags ? "MCP tools: " + tags : "No MCP tool used") + ` · ${ev.t.toFixed(1)}s`));
+          break;
+        }
+        case "error":
+          finished = true;
+          turn.add("ERROR", esc(ev.text), null, "err");
+          turn.time.textContent = "failed";
+          pending.className = "msg error";
+          pending.querySelector(".who").textContent = "Problem";
+          pending.querySelector(".bubble").innerHTML = esc(ev.text);
+          loadStatus();
+          break;
+      }
+      scrollDown(messagesEl);
+    };
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, message: question }),
+      });
+      if (!res.ok) {
+        let msg = `Request failed (${res.status}).`;
+        try { msg = (await res.json()).error || msg; } catch {}
+        handle({ type: "error", text: msg });
+      } else {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          let nl;
+          while ((nl = buffer.indexOf("\n")) >= 0) {
+            const line = buffer.slice(0, nl).trim();
+            buffer = buffer.slice(nl + 1);
+            if (line) { try { handle(JSON.parse(line)); } catch {} }
+          }
+        }
+        if (!finished) handle({ type: "error", text: "The answer was interrupted. Please try again." });
+      }
+    } catch {
+      handle({ type: "error", text: "Cannot reach the local web server. Is web_app.py still running?" });
+    } finally {
+      setBusy(false);
+      input.focus();
+    }
+  }
+
+  // ---------- wiring ----------
+  function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 160) + "px"; }
+  input.addEventListener("input", autosize);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); ask(input.value); }
+  });
+  $("composer").addEventListener("submit", (e) => { e.preventDefault(); ask(input.value); });
+  $("new-chat").addEventListener("click", async () => {
+    if (busy) return;
+    try { await fetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: sessionId }) }); } catch {}
+    sessionId = newSessionId();
+    location.reload();
+  });
+
+  loadStatus();
+  input.focus();
+})();
+</script>
+</body>
+</html>

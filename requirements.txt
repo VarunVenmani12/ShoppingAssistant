@@ -1,0 +1,7 @@
+# Model Context Protocol Python SDK (client + server, stdio transport).
+# Also installs starlette + uvicorn, which the web UI (web_app.py) uses.
+mcp>=1.10,<2
+# Official Ollama Python client (talks to the local Ollama server)
+ollama>=0.5.1,<1
+# Optional: nicer test runner (tests also run with the built-in unittest)
+pytest>=8
