@@ -358,6 +358,14 @@ In the chat you can type:
 
 The first question can take a while because Ollama loads the model into memory.
 
+**Timing logs.** With `LOG_LEVEL=INFO`, every question also prints `[TIMING]` lines:
+each Ollama request (wall-clock time plus Ollama's own `total`, `load`, prompt and
+output token counts and durations, thinking characters and message count), each
+LLM step (`tool-selection` or `response-generation`), each MCP tool call, and the
+query total. They contain no message text or credentials. A large gap between the
+wall-clock time and Ollama's prompt + output durations usually means the model is
+loading or the PC is short of RAM.
+
 ## 11b. Web UI (browser)
 
 ```powershell
@@ -527,6 +535,8 @@ Example: **"Find laptops under ₹50000 with 16GB RAM"**
   placeholders and make no network calls.
 * Provider credentials are only checked for presence; their values are never
   logged or returned.
+* Keep credentials in `.env` only. `.gitignore` excludes `.env`, `.env.*`
+  (except `.env.example`), key files (`*.pem`, `*.key`, `*.pfx`, `*.p12`) and `secrets/`.
 * All tool arguments are validated twice: against the JSON schema in the
   client and again in the server (types, lengths, price ranges, product-ID
   pattern `^[A-Z]{1,3}\d{3}$`, known categories).

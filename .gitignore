@@ -9,8 +9,15 @@ __pycache__/
 venv/
 env/
 
-# Local configuration / secrets
+# Local configuration / secrets (.env.example is the only env file to commit)
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+secrets/
 
 # Editors / OS
 .vscode/

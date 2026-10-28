@@ -91,12 +91,57 @@ class ShoppingAssistant:
         self.max_tool_rounds = max_tool_rounds
         self.history: list[dict[str, Any]] = []
         self.tool_calls_made: list[str] = []  # for tests / demo output
+        # Timing of the last ask(): {"total_s": float, "steps": [...]}. No message content.
+        self.last_timing: dict[str, Any] = {"total_s": None, "steps": []}
 
     def reset(self) -> None:
         self.history.clear()
 
     async def ask(self, user_text: str, on_event: EventCallback | None = None) -> str:
         started = time.perf_counter()
+        self.last_timing = {"total_s": None, "steps": []}
+        try:
+            return await self._ask(user_text, on_event, started)
+        finally:
+            self._log_query_timing(time.perf_counter() - started)
+
+    async def _chat(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None) -> LLMReply:
+        """One timed LLM request, labelled by what the model did with it."""
+        t0 = time.perf_counter()
+        reply = await self.llm.chat(messages, tools)
+        step = "tool-selection" if reply.tool_calls else "response-generation"
+        record = {"step": step, "elapsed_s": round(time.perf_counter() - t0, 2)}
+        record.update({k: v for k, v in (getattr(reply, "timing", None) or {}).items() if k != "elapsed_s"})
+        self.last_timing["steps"].append(record)
+        log.info("[TIMING] LLM %s: %.2fs", step, record["elapsed_s"])
+        return reply
+
+    async def _call_tool(self, call: Any) -> Any:
+        """One timed MCP tool execution (arguments are not logged here)."""
+        t0 = time.perf_counter()
+        result = await self.mcp.call_tool(call.name, call.arguments)
+        elapsed = round(time.perf_counter() - t0, 3)
+        self.last_timing["steps"].append(
+            {"step": "mcp", "tool": call.name, "elapsed_s": elapsed, "is_error": result.is_error}
+        )
+        log.info("[TIMING] MCP %s: %.3fs", call.name, elapsed)
+        return result
+
+    def _log_query_timing(self, total: float) -> None:
+        steps = self.last_timing["steps"]
+        self.last_timing["total_s"] = round(total, 2)
+        if not steps:
+            return
+        llm = [s for s in steps if s["step"] != "mcp"]
+        mcp = [s for s in steps if s["step"] == "mcp"]
+        log.info(
+            "[TIMING] Query total %.2fs | LLM %d call(s) %.2fs | MCP %d call(s) %.3fs | "
+            "history %d msgs",
+            total, len(llm), sum(s["elapsed_s"] for s in llm),
+            len(mcp), sum(s["elapsed_s"] for s in mcp), len(self.history),
+        )
+
+    async def _ask(self, user_text: str, on_event: EventCallback | None, started: float) -> str:
 
         async def emit(kind: str, **data: Any) -> None:
             if on_event is None:
@@ -123,7 +168,7 @@ class ShoppingAssistant:
 
         log.info("[LLM] Determining required tool...")
         await emit("llm", text="Determining required tool...")
-        reply = await self.llm.chat(messages, tools)
+        reply = await self._chat(messages, tools)
 
         rounds = 0
         while reply.tool_calls and rounds < self.max_tool_rounds:
@@ -149,7 +194,7 @@ class ShoppingAssistant:
             )
             for call in reply.tool_calls:
                 await emit("mcp_call", tool=call.name, arguments=_as_dict(call.arguments))
-                result = await self.mcp.call_tool(call.name, call.arguments)
+                result = await self._call_tool(call)
                 self.tool_calls_made.append(call.name)
                 await emit(
                     "mcp_result", tool=call.name, arguments=result.arguments,
@@ -159,11 +204,11 @@ class ShoppingAssistant:
 
             log.info("[LLM] Generating final response...")
             await emit("llm", text="Generating final response...")
-            reply = await self.llm.chat(messages, tools)
+            reply = await self._chat(messages, tools)
 
         if reply.tool_calls:  # tool budget exhausted: force a text answer
             log.info("[LLM] Tool-call limit reached; asking for a final answer")
-            reply = await self.llm.chat(messages, None)
+            reply = await self._chat(messages, None)
 
         answer = reply.content.strip() or (
             "Sorry, I couldn't produce an answer. Please try rephrasing your question."
