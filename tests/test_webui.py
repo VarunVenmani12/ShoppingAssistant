@@ -27,6 +27,9 @@ class WebUITests(unittest.TestCase):
             page = client.get("/")
             self.assertEqual(page.status_code, 200)
             self.assertIn("AI Shopping Assistant", page.text)
+            # demo data must be labelled as such, never presented as live prices
+            self.assertIn("Demo data · sample prices, not live", page.text)
+            self.assertIn("not live prices from Amazon, Flipkart", page.text)
 
             status = client.get("/api/status").json()
             self.assertFalse(status["ollama"]["ok"])

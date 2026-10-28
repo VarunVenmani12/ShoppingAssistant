@@ -9,6 +9,29 @@ connects a local LLM to tools and data.
 * **No cloud LLM, no API keys, no web scraping, no LangChain / RAG / vector DB**
 * **Pluggable data providers:** local JSON by default; Amazon/Flipkart placeholders for later phases
 
+> **Demo data:** all products, prices and store names are fictional sample values
+> from `products.json`. They are **not** live Amazon, Flipkart or other marketplace prices.
+
+### Quick start (Windows)
+
+1. Install Python 3.10+ and [Ollama](https://ollama.com), then run `ollama pull qwen3:8b`.
+2. Double-click `setup_and_verify.bat` once (creates `.venv`, installs requirements, runs the tests).
+3. Optional: copy `.env.example` to `.env` to change settings. The default model is
+   `qwen3:8b`; if you have a `.env`, make sure it says `OLLAMA_MODEL=qwen3:8b`.
+4. Double-click `run_web.bat` (browser UI at http://127.0.0.1:8000) or `run_assistant.bat` (CLI).
+   Keep the laptop on AC power; on battery the CPU is throttled and answers get much slower.
+
+### Supported features
+
+* Product search with filters: category, price range, brand, minimum RAM/storage, keyword.
+* Product details (full specifications) and price comparison across the demo stores,
+  including the best in-stock deal.
+* Follow-up questions in the same conversation ("details for the first one", "compare its prices").
+* Browser UI with a live MCP trace panel, and a CLI with demo and one-shot modes.
+* Friendly errors for unknown product IDs, invalid filters, Ollama not running or a missing model;
+  every MCP tool call is limited to 30 seconds and returns an error instead of hanging.
+* `[TIMING]` logs for each LLM request, MCP call and question (no message text logged).
+
 ---
 
 ## 1. Project overview
@@ -492,6 +515,7 @@ Run one file on Windows: `.\.venv\Scripts\python.exe -m pytest tests\test_provid
 | `ModuleNotFoundError: No module named 'client'` | Run commands from the project root (`D:\Varun\AI\ShoppingAssistant`). |
 | First answer is very slow | Normal: Ollama is loading the model. Later answers are faster. Keep `OLLAMA_THINK=false`. |
 | Timeout from Ollama | Increase `OLLAMA_TIMEOUT` in `.env`. |
+| "Ollama took too long" after the laptop slept, or answers suddenly very slow | Sleep/standby or battery power interrupts or throttles the CPU. Keep the laptop plugged in and awake during a demo, then ask the question again; the conversation continues normally. |
 | `₹` shows as `?` or garbled | Use Windows Terminal, or run `chcp 65001` first. Typing `Rs 50000` or `50000` also works. |
 | The model answers without using a tool | Rephrase more specifically (e.g. include "laptop", a price or an ID) or `clear` the conversation. Small local models occasionally skip tools. |
 | Web UI: `could not start the web server on port 8000` | Another program uses the port. Run `python web_app.py --port 8080`. |
@@ -545,7 +569,19 @@ Example: **"Find laptops under ₹50000 with 16GB RAM"**
 
 ## Limitations (first version)
 
-* Demo data only: 19 products with fictional store names and prices.
+* Demo data only: 19 products with fictional store names and prices. The web UI
+  shows a permanent "Demo data · sample prices, not live" label and the CLI banner
+  says the same; nothing is presented as a live marketplace price.
+* Speed on a CPU-only laptop: Ollama runs qwen3:8b on the CPU when no supported GPU
+  is found (`ollama ps` shows `100% CPU`). Measured on a 4-core i5-1135G7 on AC
+  power: first model load about 15-20 s, short tool-selection steps 6-37 s, final
+  answers 40-75 s, a warm 3-question conversation about 200 s. On battery Windows
+  throttles the CPU and answers can become several times slower; plug in for demos.
+* Follow-up questions re-read part of the conversation because of how the stock
+  qwen3 template handles `think=false`. An optional local `qwen3:8b-nothink` model
+  tag (same weights, adjusted template) measured about 25% faster per conversation,
+  but it is an experiment that is not part of this repository; the supported
+  configuration is `OLLAMA_MODEL=qwen3:8b`.
 * Amazon and Flipkart are placeholders: no live prices yet. Product IDs must
   still match the local pattern (`L001`), so marketplace IDs (ASINs, Flipkart
   IDs) are not accepted yet. Results from secondary providers are reported but

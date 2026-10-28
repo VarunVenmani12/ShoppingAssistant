@@ -83,6 +83,43 @@ class AssistantFlowTests(unittest.TestCase):
         )
         self.assertEqual(answer, "That product ID does not exist.")
 
+    def test_unchecked_product_id_triggers_one_tool_retry(self):
+        """Regression: late in a conversation the model said a valid ID did not exist
+        without calling a tool. The assistant must ask it once to check with a tool."""
+        def final(messages):
+            data = json.loads(messages[-1]["content"])
+            return LLMReply(f"{data['name']} costs {data['price_formatted']}.")
+
+        answer, assistant, llm = run_assistant(
+            [LLMReply("The product ID M001 does not exist."),  # guess, no tool call
+             LLMReply("", [ToolCall("get_details", {"product_id": "M001"})]),
+             final],
+            "Show details for M001",
+        )
+        self.assertEqual(assistant.tool_calls_made, ["get_details"])
+        self.assertIn("LG 24MP400", answer)
+        self.assertIn("M001", llm.calls[1][-1]["content"])  # the retry carried the nudge
+        self.assertNotIn("Before answering", json.dumps(assistant.history))  # nudge not stored
+
+    def test_no_retry_for_ids_already_checked_or_without_ids(self):
+        async def runner():
+            async with ShoppingMCPClient(server_log_level="WARNING") as client:
+                llm = ScriptedLLM([
+                    LLMReply("", [ToolCall("compare_price", {"product_id": "L003"})]),
+                    LLMReply("GadgetHub is cheapest."),
+                    LLMReply("GadgetHub has the best deal for L003."),  # from history: no retry
+                    LLMReply("Hello! Ask me about products."),          # no ID: no retry
+                ])
+                assistant = ShoppingAssistant(llm, client)
+                await assistant.ask("Compare prices for L003")
+                await assistant.ask("Which store is best for L003?")
+                await assistant.ask("hello")
+                return llm, assistant
+
+        llm, assistant = asyncio.run(runner())
+        self.assertEqual(len(llm.calls), 4)
+        self.assertEqual(llm.script, [])
+
     def test_empty_input(self):
         async def runner():
             async with ShoppingMCPClient(server_log_level="WARNING") as client:

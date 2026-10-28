@@ -17,6 +17,7 @@ import argparse
 import asyncio
 import json
 import logging
+import re
 import sys
 import threading
 import time
@@ -59,6 +60,8 @@ Answer format:
 
 EXIT_COMMANDS = {"exit", "quit"}
 MAX_HISTORY_MESSAGES = 24
+# Product-ID-like tokens in user text (same shape the server accepts: L001, MS002, X999).
+PRODUCT_ID_IN_TEXT = re.compile(r"\b[A-Za-z]{1,3}\d{3}\b")
 DEMO_QUESTIONS = [
     "Find laptops under ₹50000",
     "Find laptops with 16GB RAM",
@@ -170,6 +173,20 @@ class ShoppingAssistant:
         await emit("llm", text="Determining required tool...")
         reply = await self._chat(messages, tools)
 
+        unchecked = self._unchecked_product_ids(user_text)
+        if unchecked and tools and not reply.tool_calls:
+            # The model answered about a product ID nothing has looked up yet. Small
+            # models sometimes guess ("does not exist") late in a conversation; ask
+            # once more to check with a tool. The nudge is not stored in history.
+            ids = ", ".join(unchecked)
+            log.info("[LLM] Answer about unchecked product ID(s) %s without a tool call; "
+                     "asking the model to check with a tool", ids)
+            await emit("llm", text=f"Asking the model to check {ids} with a tool first...")
+            nudge = {"role": "user", "content": (
+                f"Before answering, call get_details or compare_price for {ids}. "
+                "Do not say whether a product exists without a tool result.")}
+            reply = await self._chat(messages + [nudge], tools)
+
         rounds = 0
         while reply.tool_calls and rounds < self.max_tool_rounds:
             rounds += 1
@@ -221,6 +238,12 @@ class ShoppingAssistant:
         self._remember(messages[turn_start:])
         return answer
 
+    def _unchecked_product_ids(self, user_text: str) -> list[str]:
+        """Product IDs in the user's message that no tool result in history mentions yet."""
+        ids = {m.upper() for m in PRODUCT_ID_IN_TEXT.findall(user_text)}
+        seen = " ".join(m.get("content", "") for m in self.history if m.get("role") == "tool")
+        return sorted(i for i in ids if f'"{i}"' not in seen)
+
     def _remember(self, turn: list[dict[str, Any]]) -> None:
         self.history.extend(turn)
         if len(self.history) > MAX_HISTORY_MESSAGES:
@@ -249,7 +272,8 @@ def _banner(settings: Settings) -> str:
     return (
         f"{line}\n        AI SHOPPING ASSISTANT\n{line}\n\n"
         f"Using:\nLLM       : Ollama ({settings.ollama_host})\n"
-        f"Model     : {settings.ollama_model}\nProtocol  : MCP (stdio transport)\n\n"
+        f"Model     : {settings.ollama_model}\nProtocol  : MCP (stdio transport)\n"
+        "Data      : products.json demo catalogue (sample prices, not live marketplace prices)\n\n"
         "Type your question, 'tools' to list MCP tools, 'clear' to reset the\n"
         "conversation, or 'exit' / 'quit' to leave.\n"
     )

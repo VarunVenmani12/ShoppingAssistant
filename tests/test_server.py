@@ -8,6 +8,8 @@ Shopping Assistant does. No server functions are imported here.
 import asyncio
 import json
 import unittest
+from types import SimpleNamespace
+from unittest import mock
 
 from client.mcp_client import ShoppingMCPClient, sanitize_arguments
 
@@ -74,6 +76,28 @@ class MCPServerProtocolTests(unittest.TestCase):
         for key in ("bad_id", "evil_id", "bad_cat", "missing", "unknown_tool", "bad_json"):
             self.assertTrue(r[key].is_error, key)
             self.assertIn("error", json.loads(r[key].text), key)
+
+
+class ToolTimeoutTests(unittest.TestCase):
+    """A hung MCP tool call must end with an error result, not wait forever."""
+
+    def test_hung_tool_call_times_out_gracefully(self):
+        class HangingSession:
+            async def call_tool(self, name, arguments):
+                await asyncio.sleep(3600)
+
+        client = ShoppingMCPClient(server_log_level="WARNING")
+        client._session = HangingSession()
+        client.tools = [SimpleNamespace(name="get_details", inputSchema={
+            "properties": {"product_id": {"type": "string"}}, "required": ["product_id"]})]
+
+        async def body():
+            return await asyncio.wait_for(client.call_tool("get_details", {"product_id": "L001"}), 5)
+
+        with mock.patch("client.mcp_client.TOOL_TIMEOUT_SECONDS", 0.2):
+            result = asyncio.run(body())
+        self.assertTrue(result.is_error)
+        self.assertIn("timed out", json.loads(result.text)["error"])
 
 
 class ArgumentSanitizerTests(unittest.TestCase):

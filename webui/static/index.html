@@ -146,6 +146,7 @@ details pre { margin: 6px 0 0; max-height: 260px; overflow: auto; font-family: v
   <header class="topbar">
     <div class="brand"><h1>AI Shopping Assistant</h1><span>local · no cloud</span></div>
     <div class="pills">
+      <span class="pill" id="pill-data" title="Products, prices and stores come from the local products.json demo catalogue. They are fictional sample values, not live Amazon, Flipkart or other marketplace prices.">Demo data · sample prices, not live</span>
       <span class="pill" id="pill-llm"><span class="dot"></span>Ollama <code id="model-name">…</code></span>
       <span class="pill" id="pill-mcp"><span class="dot"></span>MCP <span id="mcp-detail">connecting…</span></span>
     </div>
@@ -158,6 +159,7 @@ details pre { margin: 6px 0 0; max-height: 260px; overflow: auto; font-family: v
         <div class="welcome" id="welcome">
           <h2>What are you shopping for?</h2>
           <p>Ask about laptops, smartphones, monitors, keyboards, mice or headphones. Prices are in ₹. Every answer comes from <code>products.json</code> through MCP tools; watch the trace panel to see each step.</p>
+          <p><strong>Demo catalogue:</strong> products, prices and store names are fictional sample data, not live prices from Amazon, Flipkart or any other marketplace.</p>
           <div class="examples" id="examples"></div>
         </div>
       </div>
